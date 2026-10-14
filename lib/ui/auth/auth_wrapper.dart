@@ -12,18 +12,16 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authVM = context.watch<AuthViewModel>();
 
-    switch (authVM.state) {
-      case AuthState.authenticating:
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-
-      case AuthState.authenticated:
-        return const DashboardPage();
-
-      case AuthState.unauthenticated:
-      default:
-        return const LoginPage();
+    if (authVM.isInitializing) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
+
+    if (authVM.state == AuthState.authenticated) {
+      return const DashboardPage();
+    }
+
+    return const LoginPage();
   }
 }

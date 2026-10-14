@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../domain/models/auth_state.dart';
 
 class AuthViewModel extends ChangeNotifier {
+  static const _rememberKey = 'remember_me';
+  bool _isInitializing = true;
+  bool get isInitializing => _isInitializing;
   final AuthRepository _repository = AuthRepository();
 
   AuthState _state = AuthState.unauthenticated;
@@ -12,20 +16,25 @@ class AuthViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   Future<void> initAuth() async {
-    _state = AuthState.authenticating;
-    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool(_rememberKey) ?? false;
 
-    final isValid = await _repository.checkAuthStatus();
-
-    if (isValid) {
-      _state = AuthState.authenticated;
+    bool isValid = false;
+    if (remember) {
+      isValid = await _repository.checkAuthStatus();
     } else {
-      _state = AuthState.unauthenticated;
+      try {
+        await _repository.logout();
+      } catch (_) {}
     }
+
+    _state = isValid ? AuthState.authenticated : AuthState.unauthenticated;
+    _isInitializing = false;
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String email, String password,
+      {bool rememberMe = false}) async {
     _errorMessage = null;
     _state = AuthState.authenticating;
     notifyListeners();
@@ -34,10 +43,12 @@ class AuthViewModel extends ChangeNotifier {
       final success = await _repository.login(email, password);
 
       if (success) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_rememberKey, rememberMe);
         _state = AuthState.authenticated;
       } else {
         _state = AuthState.unauthenticated;
-        _errorMessage = 'Email atau password salah!';
+        _errorMessage = 'username / password salah!';
       }
     } catch (e) {
       _state = AuthState.unauthenticated;
@@ -48,6 +59,8 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<void> logout() async {
     await _repository.logout();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_rememberKey, false);
     _state = AuthState.unauthenticated;
     notifyListeners();
   }

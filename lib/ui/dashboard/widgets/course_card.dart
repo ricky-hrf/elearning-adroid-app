@@ -22,12 +22,12 @@ class CourseCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [color, color.withOpacity(0.7)],
+          colors: [color, color.withValues(alpha: 0.7)],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -52,7 +52,7 @@ class CourseCard extends StatelessWidget {
             Text(
               course.teacher,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 12,
               ),
             ),
@@ -61,7 +61,7 @@ class CourseCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: course.progress / 100,
-                backgroundColor: Colors.white.withOpacity(0.3),
+                backgroundColor: Colors.white.withValues(alpha: 0.3),
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 minHeight: 4,
               ),
@@ -70,7 +70,7 @@ class CourseCard extends StatelessWidget {
             Text(
               '${course.progress.toInt()}% selesai',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 11,
               ),
             ),

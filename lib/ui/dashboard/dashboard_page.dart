@@ -117,7 +117,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 Text(
                                   viewModel.getGreeting(),
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -136,7 +136,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -149,7 +149,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             tooltip: 'Keluar',
                             icon: const Icon(Icons.logout, color: Colors.white),
                             style: IconButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.2),
+                              backgroundColor: Colors.white.withValues(alpha: 0.2),
                             ),
                           ),
                         ],
