@@ -1,53 +1,33 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../domain/models/user.dart';
+import '../services/api_client.dart';
+import '../services/token_storage.dart';
 
 class AuthRepository {
-  static const String _keyToken = 'auth_token';
-  static const String _keyExpiry = 'auth_token_expiry';
+  final _api = ApiClient.instance;
+  final _tokens = TokenStorage.instance;
 
-  Future<SharedPreferences> get _prefs async =>
-      await SharedPreferences.getInstance();
-
-  Future<bool> login(String email, String password) async {
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (email == 'admin@ubkn.sch.id' && password == '12345') {
-      final prefs = await _prefs;
-
-      final token = 'mock_token_xyz_123';
-
-      final expiryTime = DateTime.now()
-          .add(const Duration(minutes: 15))
-          .millisecondsSinceEpoch;
-
-      await prefs.setString(_keyToken, token);
-      await prefs.setInt(_keyExpiry, expiryTime);
-
-      return true;
-    }
-    return false;
+  Future<User> login({
+    required String email,
+    required String password,
+    required bool rememberMe,
+  }) async {
+    final res = await _api.post('/auth/login', auth: false, body: {
+      'email': email,
+      'password': password,
+      'remember_me': rememberMe,
+    });
+    final data = res['data'] as Map<String, dynamic>;
+    await _tokens.save(data['token'] as String, persist: rememberMe);
+    return User.fromJson(data['user'] as Map<String, dynamic>);
   }
 
-  Future<bool> checkAuthStatus() async {
-    final prefs = await _prefs;
-    final token = prefs.getString(_keyToken);
-    final expiry = prefs.getInt(_keyExpiry);
+  Future<bool> hasToken() async => (await _tokens.read()) != null;
 
-    if (token == null || expiry == null) {
-      return false;
-    }
-
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
-    if (currentTime > expiry) {
-      await logout();
-      return false;
-    }
-
-    return true;
+  Future<User> me() async {
+    final res = await _api.get('/auth/me');
+    final data = res['data'] as Map<String, dynamic>;
+    return User.fromJson(data['user'] as Map<String, dynamic>);
   }
 
-  Future<void> logout() async {
-    final prefs = await _prefs;
-    await prefs.remove(_keyToken);
-    await prefs.remove(_keyExpiry);
-  }
+  Future<void> logout() => _tokens.clear();
 }

@@ -1,34 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/services/api_client.dart';
 import '../../../domain/models/auth_state.dart';
+import '../../../domain/models/user.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  static const _rememberKey = 'remember_me';
-  bool _isInitializing = true;
-  bool get isInitializing => _isInitializing;
+  AuthViewModel() {
+    ApiClient.instance.onUnauthorized = _handleSessionExpired;
+  }
+
   final AuthRepository _repository = AuthRepository();
 
+  bool _isInitializing = true;
   AuthState _state = AuthState.unauthenticated;
   String? _errorMessage;
+  User? _user;
 
+  bool get isInitializing => _isInitializing;
   AuthState get state => _state;
   String? get errorMessage => _errorMessage;
+  User? get user => _user;
 
   Future<void> initAuth() async {
-    final prefs = await SharedPreferences.getInstance();
-    final remember = prefs.getBool(_rememberKey) ?? false;
-
-    bool isValid = false;
-    if (remember) {
-      isValid = await _repository.checkAuthStatus();
-    } else {
-      try {
-        await _repository.logout();
-      } catch (_) {}
+    try {
+      if (await _repository.hasToken()) {
+        _user = await _repository.me();
+        _state = AuthState.authenticated;
+      }
+    } catch (_) {
+      _user = null;
+      _state = AuthState.unauthenticated;
     }
-
-    _state = isValid ? AuthState.authenticated : AuthState.unauthenticated;
     _isInitializing = false;
     notifyListeners();
   }
@@ -40,28 +42,40 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final success = await _repository.login(email, password);
-
-      if (success) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(_rememberKey, rememberMe);
-        _state = AuthState.authenticated;
-      } else {
-        _state = AuthState.unauthenticated;
-        _errorMessage = 'username / password salah!';
-      }
-    } catch (e) {
+      _user = await _repository.login(
+        email: email.trim(),
+        password: password,
+        rememberMe: rememberMe,
+      );
+      _state = AuthState.authenticated;
+    } on ApiException catch (e) {
       _state = AuthState.unauthenticated;
-      _errorMessage = 'Terjadi kesalahan: $e';
+      _errorMessage = e.message;
+    } catch (_) {
+      _state = AuthState.unauthenticated;
+      _errorMessage = 'Terjadi kesalahan, coba lagi';
     }
     notifyListeners();
   }
 
   Future<void> logout() async {
     await _repository.logout();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_rememberKey, false);
+    _user = null;
+    _errorMessage = null;
     _state = AuthState.unauthenticated;
     notifyListeners();
+  }
+
+  void _handleSessionExpired() {
+    _user = null;
+    _state = AuthState.unauthenticated;
+    _errorMessage = 'Sesi berakhir, silakan login kembali';
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    ApiClient.instance.onUnauthorized = null;
+    super.dispose();
   }
 }

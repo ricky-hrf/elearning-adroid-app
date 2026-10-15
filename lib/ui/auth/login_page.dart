@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
     final authVM = context.watch<AuthViewModel>();
 
     return Scaffold(
-      backgroundColor: Color(0xFFFAFAEE),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
